@@ -10,6 +10,7 @@ import com.my.rpc.provider.ServiceProvider;
 import com.my.rpc.provider.impl.SimpleServiceProvider;
 import com.my.rpc.provider.impl.ZkServiceProvider;
 import com.my.rpc.transmission.RpcServer;
+import com.my.rpc.util.ShutDownHookUtils;
 import com.my.rpc.util.ThreadPoolUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,10 @@ public class SocketRpcServer implements RpcServer {
 
     @Override
     public void start() {
+
+        // 添加一个关闭钩子
+        ShutDownHookUtils.clearAll();
+
         try (ServerSocket serverSocket = new ServerSocket(port)) {
 
             log.info("Server started on port: {}", port);

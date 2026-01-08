@@ -7,8 +7,10 @@ import com.my.rpc.factory.SingletonFactory;
 import com.my.rpc.registry.ServiceRegistry;
 import com.my.rpc.registry.zk.ZkClient;
 import com.my.rpc.util.IpUtils;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 @Slf4j
@@ -32,5 +34,16 @@ public class ZkServiceRegistry implements ServiceRegistry {
         String path = RpcConstant.ZK_RPC_ROOT_PATH + StrUtil.SLASH + rpcServiceName + StrUtil.SLASH + IpUtils.toIpPort(address);
         zkClient.createPersistentNode(path);
 
+    }
+
+    /**
+     * server端调用，从zk端取消注册
+     */
+    @SneakyThrows
+    @Override
+    public void clearAll() {
+        String host = InetAddress.getLocalHost().getHostAddress();
+        int port = RpcConstant.SERVER_PORT;
+        zkClient.clearAll(new InetSocketAddress(host, port));
     }
 }
