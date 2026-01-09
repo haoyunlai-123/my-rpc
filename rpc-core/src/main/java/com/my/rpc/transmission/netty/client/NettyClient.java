@@ -1,9 +1,16 @@
 package com.my.rpc.transmission.netty.client;
 
 import com.my.rpc.constant.RpcConstant;
+import com.my.rpc.dto.RpcMsg;
 import com.my.rpc.dto.RpcReq;
 import com.my.rpc.dto.RpcResp;
+import com.my.rpc.enums.CompressType;
+import com.my.rpc.enums.MsgType;
+import com.my.rpc.enums.SerializeType;
+import com.my.rpc.enums.VersionType;
 import com.my.rpc.transmission.RpcClient;
+import com.my.rpc.transmission.netty.codec.NettyRpcDecoder;
+import com.my.rpc.transmission.netty.codec.NettyRpcEncoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -17,8 +24,13 @@ import io.netty.util.AttributeKey;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Slf4j
 public class NettyClient implements RpcClient {
+
+    // 防止多个线程同时自增导致线程安全问题，例如：线程1读取后加一再赋值，线程2也读取后加一再赋值，加了两次但值只加了一
+    private static final AtomicInteger ID_GEN = new AtomicInteger(0);
 
     private static final Bootstrap BOOTSTRAP;
     private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
@@ -33,8 +45,8 @@ public class NettyClient implements RpcClient {
 
                     @Override
                     protected void initChannel(SocketChannel channel) throws Exception {
-                        channel.pipeline().addLast(new StringDecoder());
-                        channel.pipeline().addLast(new StringEncoder());
+                        channel.pipeline().addLast(new NettyRpcDecoder());
+                        channel.pipeline().addLast(new NettyRpcEncoder());
                         channel.pipeline().addLast(new NettyRpcClientHandler());
                     }
                 });
@@ -51,16 +63,22 @@ public class NettyClient implements RpcClient {
 
         Channel channel = channelFuture.channel();
 
-        String interfaceName = req.getInterfaceName();
+        RpcMsg rpcMsg = RpcMsg.builder()
+                .id(ID_GEN.getAndIncrement())
+                .version(VersionType.VERSION1)
+                .serializeType(SerializeType.KRYO)
+                .compressType(CompressType.GZIP)
+                .msgType(MsgType.RPC_REQ)
+                .data(req)
+                .build();
 
-        channel.writeAndFlush(interfaceName).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        channel.writeAndFlush(rpcMsg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
         channel.closeFuture().sync();
 
         // channel中map的key
-        AttributeKey<String> key = AttributeKey.valueOf(RpcConstant.NETTY_PRC_KEY);
+        // 此处泛型为map的值的类型
+        AttributeKey<RpcResp<?>> key = AttributeKey.valueOf(RpcConstant.NETTY_PRC_KEY);
 
-        String s = channel.attr(key).get();
-        System.out.println(s);
-        return null;
+        return channel.attr(key).get();
     }
 }

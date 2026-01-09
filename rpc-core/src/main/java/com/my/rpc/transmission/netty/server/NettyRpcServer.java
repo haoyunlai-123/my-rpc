@@ -4,6 +4,8 @@ import com.my.rpc.config.RpcServiceConfig;
 import com.my.rpc.constant.RpcConstant;
 import com.my.rpc.transmission.RpcClient;
 import com.my.rpc.transmission.RpcServer;
+import com.my.rpc.transmission.netty.codec.NettyRpcDecoder;
+import com.my.rpc.transmission.netty.codec.NettyRpcEncoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -34,8 +36,8 @@ public class NettyRpcServer implements RpcServer {
 
                         @Override
                         protected void initChannel(SocketChannel channel) throws Exception {
-                            channel.pipeline().addLast(new StringDecoder());
-                            channel.pipeline().addLast(new StringEncoder());
+                            channel.pipeline().addLast(new NettyRpcDecoder());
+                            channel.pipeline().addLast(new NettyRpcEncoder());
                             channel.pipeline().addLast(new NettyRpcServerHandler());
                         }
                     });
