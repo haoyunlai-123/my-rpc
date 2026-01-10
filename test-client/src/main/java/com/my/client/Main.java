@@ -7,6 +7,7 @@ import com.my.rpc.dto.RpcReq;
 import com.my.rpc.dto.RpcResp;
 import com.my.rpc.proxy.RpcClientProxy;
 import com.my.rpc.transmission.RpcClient;
+import com.my.rpc.transmission.netty.client.NettyClient;
 import com.my.rpc.transmission.socket.client.SocketClient;
 
 public class Main {
@@ -43,6 +44,10 @@ public class Main {
         UserService userService = ProxyUtils.getProxy(UserService.class);
         User user = userService.getUser(1L);
         System.out.println(user);
+
+       /* RpcClient client = new NettyClient();
+        RpcResp<?> rpcResp = client.sendReq(RpcReq.builder().interfaceName("请求数据").build());*/
+
     }
 
     private static <T> T getProxy(Class<T> clazz) {

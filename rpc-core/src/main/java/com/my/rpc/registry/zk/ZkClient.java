@@ -122,10 +122,10 @@ public class ZkClient {
                 try {
                     client.delete().deletingChildrenIfNeeded().forPath(path);
                     // 若子节点为空，删除父节点
-                    String faPath = path.substring(0, path.lastIndexOf("/"));
+                    /*String faPath = path.substring(0, path.lastIndexOf("/"));
                     if (client.getChildren().forPath(faPath).isEmpty()) {
                         client.delete().deletingChildrenIfNeeded().forPath(path);
-                    }
+                    }*/
                 } catch (Exception e) {
                     log.error("zk删除节点失败：{}", path, e);
                 }

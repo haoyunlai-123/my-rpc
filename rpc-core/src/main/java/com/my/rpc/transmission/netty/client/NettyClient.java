@@ -8,6 +8,9 @@ import com.my.rpc.enums.CompressType;
 import com.my.rpc.enums.MsgType;
 import com.my.rpc.enums.SerializeType;
 import com.my.rpc.enums.VersionType;
+import com.my.rpc.factory.SingletonFactory;
+import com.my.rpc.registry.ServiceDiscovery;
+import com.my.rpc.registry.impl.ZkServiceDiscovery;
 import com.my.rpc.transmission.RpcClient;
 import com.my.rpc.transmission.netty.codec.NettyRpcDecoder;
 import com.my.rpc.transmission.netty.codec.NettyRpcEncoder;
@@ -24,6 +27,7 @@ import io.netty.util.AttributeKey;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -34,6 +38,16 @@ public class NettyClient implements RpcClient {
 
     private static final Bootstrap BOOTSTRAP;
     private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
+
+    private final ServiceDiscovery serviceDiscovery;
+
+    public NettyClient() {
+        this(SingletonFactory.getInstance(ZkServiceDiscovery.class));
+    }
+
+    public NettyClient(ServiceDiscovery serviceDiscovery) {
+        this.serviceDiscovery = serviceDiscovery;
+    }
 
     static {
         BOOTSTRAP = new Bootstrap();
@@ -56,10 +70,12 @@ public class NettyClient implements RpcClient {
     @Override
     public RpcResp<?> sendReq(RpcReq req) {
 
-        // 异步连接server端
-        ChannelFuture channelFuture = BOOTSTRAP.connect("127.0.0.1", 8888).sync();
+        InetSocketAddress address = serviceDiscovery.lookupService(req);
 
-        log.info("netty rpc client连接已建立");
+        // 异步连接server端
+        ChannelFuture channelFuture = BOOTSTRAP.connect(address).sync();
+
+        log.info("netty rpc client连接已建立, 连接到： {}", address);
 
         Channel channel = channelFuture.channel();
 
@@ -73,6 +89,8 @@ public class NettyClient implements RpcClient {
                 .build();
 
         channel.writeAndFlush(rpcMsg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+
+        // 阻塞等待
         channel.closeFuture().sync();
 
         // channel中map的key

@@ -29,8 +29,9 @@ public class NettyRpcEncoder extends MessageToByteEncoder<RpcMsg> {
         byteBuf.writerIndex(byteBuf.writerIndex() + 4);
 
         byteBuf.writeByte(rpcMsg.getMsgType().getCode());
-        byteBuf.writeByte(rpcMsg.getCompressType().getCode());
         byteBuf.writeByte(rpcMsg.getSerializeType().getCode());
+        byteBuf.writeByte(rpcMsg.getCompressType().getCode());
+
 
         byteBuf.writeInt(rpcMsg.getId());
 
