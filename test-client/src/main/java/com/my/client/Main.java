@@ -10,6 +10,9 @@ import com.my.rpc.transmission.RpcClient;
 import com.my.rpc.transmission.netty.client.NettyClient;
 import com.my.rpc.transmission.socket.client.SocketClient;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class Main {
     public static void main1(String[] args) {
         /*UserService userService = new UserServiceImpl();
@@ -42,8 +45,18 @@ public class Main {
     public static void main(String[] args) {
 //        UserService userService = getProxy(UserService.class);
         UserService userService = ProxyUtils.getProxy(UserService.class);
-        User user = userService.getUser(1L);
-        System.out.println(user);
+        /*User user = userService.getUser(1L);
+        System.out.println(user);*/
+
+
+
+        ExecutorService executorService = Executors.newFixedThreadPool(20);
+        for (int i = 0; i < 20; i++) {
+            executorService.execute(() -> {
+                User user = userService.getUser(1L);
+                System.out.println(user);
+            });
+        }
 
        /* RpcClient client = new NettyClient();
         RpcResp<?> rpcResp = client.sendReq(RpcReq.builder().interfaceName("请求数据").build());*/

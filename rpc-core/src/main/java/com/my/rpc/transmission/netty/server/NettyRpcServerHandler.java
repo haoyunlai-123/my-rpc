@@ -13,6 +13,8 @@ import com.my.rpc.provider.ServiceProvider;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -67,5 +69,21 @@ public class NettyRpcServerHandler extends SimpleChannelInboundHandler<RpcMsg> {
             log.error("调用失败", e);
             return RpcResp.fail(req.getReqId(), e.getMessage());
         }
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+
+        boolean isNeedClose = evt instanceof IdleStateEvent &&
+                ((IdleStateEvent) evt).state() == IdleState.READER_IDLE;
+
+        // 不需要心跳
+        if (! isNeedClose) {
+            super.userEventTriggered(ctx, evt);
+            return;
+        }
+
+        log.debug("服务端长时间没有收到客户端的心跳，关闭channel，address: {}", ctx.channel().remoteAddress());
+        ctx.channel().close();
     }
 }

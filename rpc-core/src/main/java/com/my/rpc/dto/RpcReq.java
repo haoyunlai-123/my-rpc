@@ -17,7 +17,7 @@ public class RpcReq implements Serializable {
     // 用来定位接口的某个实现类
     // 请求id
     private String reqId;
-    // 找相应接口的实现类
+    // 接口的全类名
     private String interfaceName;
     // 找要调用的方法名
     private String methodName;

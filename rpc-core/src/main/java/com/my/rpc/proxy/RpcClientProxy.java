@@ -1,6 +1,11 @@
 package com.my.rpc.proxy;
 
 import cn.hutool.core.util.IdUtil;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
+import com.my.rpc.annotation.Retry;
 import com.my.rpc.config.RpcServiceConfig;
 import com.my.rpc.dto.RpcReq;
 import com.my.rpc.dto.RpcResp;
@@ -8,12 +13,15 @@ import com.my.rpc.enums.RpcRespStatus;
 import com.my.rpc.exception.RpcException;
 import com.my.rpc.transmission.RpcClient;
 import com.my.rpc.transmission.socket.client.SocketClient;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Objects;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class RpcClientProxy implements InvocationHandler {
@@ -72,11 +80,32 @@ public class RpcClientProxy implements InvocationHandler {
                 .group(rpcServiceConfig.getGroup())
                 .build();
 
-        RpcResp<?> rpcResp = rpcClient.sendReq(req);
+        Retry retry = method.getAnnotation(Retry.class);
+        if (Objects.isNull(retry)) {
+            return sendReq(req);
+        }
 
+        Retryer<Object> retryer = RetryerBuilder.<Object>newBuilder()
+                // 发生何种异常时重试
+                .retryIfExceptionOfType(retry.value())
+                // 重试次数
+                .withStopStrategy(StopStrategies.stopAfterAttempt(retry.maxAttempts()))
+                // 重试间隔时间
+                .withWaitStrategy(WaitStrategies.fixedWait(retry.delay(), TimeUnit.MILLISECONDS))
+                .build();
+
+       return retryer.call(() -> sendReq(req));
+
+    }
+
+    @SneakyThrows
+    private Object sendReq(RpcReq req) {
+        Future<RpcResp<?>> future = rpcClient.sendReq(req);
+        RpcResp<?> rpcResp = future.get();
         check(req, rpcResp);
         return rpcResp.getData();
     }
+
 
     private void check(RpcReq req, RpcResp<?> rpcResp) {
         if (Objects.isNull(rpcResp)) {

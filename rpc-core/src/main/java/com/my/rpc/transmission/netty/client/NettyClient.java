@@ -23,23 +23,27 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.CompleteFuture;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class NettyClient implements RpcClient {
 
-    // 防止多个线程同时自增导致线程安全问题，例如：线程1读取后加一再赋值，线程2也读取后加一再赋值，加了两次但值只加了一
-    private static final AtomicInteger ID_GEN = new AtomicInteger(0);
-
     private static final Bootstrap BOOTSTRAP;
     private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
 
     private final ServiceDiscovery serviceDiscovery;
+
+    private final ChannelPool channelPool;
 
     public NettyClient() {
         this(SingletonFactory.getInstance(ZkServiceDiscovery.class));
@@ -47,6 +51,7 @@ public class NettyClient implements RpcClient {
 
     public NettyClient(ServiceDiscovery serviceDiscovery) {
         this.serviceDiscovery = serviceDiscovery;
+        this.channelPool = SingletonFactory.getInstance(ChannelPool.class);
     }
 
     static {
@@ -59,6 +64,8 @@ public class NettyClient implements RpcClient {
 
                     @Override
                     protected void initChannel(SocketChannel channel) throws Exception {
+                        channel.pipeline().addLast(new IdleStateHandler(0, 5, 0,
+                                TimeUnit.SECONDS));
                         channel.pipeline().addLast(new NettyRpcDecoder());
                         channel.pipeline().addLast(new NettyRpcEncoder());
                         channel.pipeline().addLast(new NettyRpcClientHandler());
@@ -68,19 +75,22 @@ public class NettyClient implements RpcClient {
 
     @SneakyThrows
     @Override
-    public RpcResp<?> sendReq(RpcReq req) {
+    public Future<RpcResp<?>> sendReq(RpcReq req) {
+
+        // 创建异步任务
+        CompletableFuture<RpcResp<?>> future = new CompletableFuture<>();
+        // 占位
+        UnprocessedRpcReq.put(req.getReqId(), future);
 
         InetSocketAddress address = serviceDiscovery.lookupService(req);
 
         // 异步连接server端
-        ChannelFuture channelFuture = BOOTSTRAP.connect(address).sync();
+        Channel channel = channelPool.get(address, () -> connect(address));
 
         log.info("netty rpc client连接已建立, 连接到： {}", address);
 
-        Channel channel = channelFuture.channel();
 
         RpcMsg rpcMsg = RpcMsg.builder()
-                .id(ID_GEN.getAndIncrement())
                 .version(VersionType.VERSION1)
                 .serializeType(SerializeType.KRYO)
                 .compressType(CompressType.GZIP)
@@ -88,15 +98,33 @@ public class NettyClient implements RpcClient {
                 .data(req)
                 .build();
 
-        channel.writeAndFlush(rpcMsg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        channel.writeAndFlush(rpcMsg)
+                .addListener((ChannelFutureListener) listener -> {
+            if (! listener.isSuccess()) {
+                listener.channel().close();
+                future.completeExceptionally(listener.cause());
+            }
+        });
 
-        // 阻塞等待
-        channel.closeFuture().sync();
+        /*// 阻塞等待
+        channel.closeFuture();
+
+
 
         // channel中map的key
         // 此处泛型为map的值的类型
-        AttributeKey<RpcResp<?>> key = AttributeKey.valueOf(RpcConstant.NETTY_PRC_KEY);
+        AttributeKey<RpcResp<?>> key = AttributeKey.valueOf(RpcConstant.NETTY_PRC_KEY);*/
 
-        return channel.attr(key).get();
+        // CompletableFuture可以用阻塞队列实现
+        return future;
+    }
+
+    private Channel connect(InetSocketAddress address) {
+        try {
+            return BOOTSTRAP.connect(address).sync().channel();
+        } catch (InterruptedException e) {
+            log.error("连接到远程服务器失败", e);
+            throw new RuntimeException(e);
+        }
     }
 }

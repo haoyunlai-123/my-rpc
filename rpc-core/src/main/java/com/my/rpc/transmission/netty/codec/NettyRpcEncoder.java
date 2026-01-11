@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class NettyRpcEncoder extends MessageToByteEncoder<RpcMsg> {
 
+    // 防止多个线程同时自增导致线程安全问题，例如：线程1读取后加一再赋值，线程2也读取后加一再赋值，加了两次但值只加了一
+    private static final AtomicInteger ID_GEN = new AtomicInteger(0);
 
     @Override
     protected void encode(ChannelHandlerContext ctx, RpcMsg rpcMsg, ByteBuf byteBuf) throws Exception {
@@ -33,7 +35,7 @@ public class NettyRpcEncoder extends MessageToByteEncoder<RpcMsg> {
         byteBuf.writeByte(rpcMsg.getCompressType().getCode());
 
 
-        byteBuf.writeInt(rpcMsg.getId());
+        byteBuf.writeInt(ID_GEN.getAndIncrement());
 
         int msgLen = RpcConstant.REQ_HEAD_LEN;
         if (! rpcMsg.getMsgType().isHeartBeat()

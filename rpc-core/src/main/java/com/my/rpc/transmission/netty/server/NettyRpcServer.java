@@ -21,7 +21,10 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class NettyRpcServer implements RpcServer {
@@ -61,6 +64,8 @@ public class NettyRpcServer implements RpcServer {
                         @Override
                         protected void initChannel(SocketChannel channel) throws Exception {
                             // 按照双链表的顺序调用一个个handler
+                            channel.pipeline().addLast(new IdleStateHandler(30, 0,
+                                    0, TimeUnit.SECONDS));
                             channel.pipeline().addLast(new NettyRpcDecoder());
                             channel.pipeline().addLast(new NettyRpcEncoder());
                             channel.pipeline().addLast(new NettyRpcServerHandler(serviceProvider));

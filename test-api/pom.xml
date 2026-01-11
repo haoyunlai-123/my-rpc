@@ -20,5 +20,10 @@
             <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.my</groupId>
+            <artifactId>rpc-core</artifactId>
+        </dependency>
     </dependencies>
 </project>
