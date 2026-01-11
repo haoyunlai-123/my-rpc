@@ -40,7 +40,7 @@ public class RpcReqHandler {
 
         Limit limit = method.getAnnotation(Limit.class);
         if (Objects.isNull(limit)) {
-            method.invoke(service, req.getParams());
+            return method.invoke(service, req.getParams());
         }
 
         // 此处可以优化，应该建立类中具体方法到限流器的映射

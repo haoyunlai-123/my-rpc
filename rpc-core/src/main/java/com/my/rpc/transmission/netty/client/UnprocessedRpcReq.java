@@ -14,6 +14,7 @@ public class UnprocessedRpcReq {
     private static final Map<String, CompletableFuture<RpcResp<?>>> RESP_CF_MAP=
             new ConcurrentHashMap<>();
 
+    // 此处存的占位符
     public static void put(String reqId, CompletableFuture<RpcResp<?>> future) {
         RESP_CF_MAP.put(reqId, future);
     }
@@ -25,6 +26,7 @@ public class UnprocessedRpcReq {
             throw new RpcException("不存在相应的CompletableFuture");
         }
 
+        // 此处存真正的值
         future.complete(resp);
     }
 }

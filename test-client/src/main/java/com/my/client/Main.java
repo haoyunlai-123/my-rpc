@@ -10,6 +10,7 @@ import com.my.rpc.transmission.RpcClient;
 import com.my.rpc.transmission.netty.client.NettyClient;
 import com.my.rpc.transmission.socket.client.SocketClient;
 
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,7 +43,7 @@ public class Main {
 
     }
 
-    public static void main(String[] args) {
+    public static void main2(String[] args) {
 //        UserService userService = getProxy(UserService.class);
         UserService userService = ProxyUtils.getProxy(UserService.class);
         /*User user = userService.getUser(1L);
@@ -50,16 +51,41 @@ public class Main {
 
 
 
-        ExecutorService executorService = Executors.newFixedThreadPool(20);
+        /*ExecutorService executorService = Executors.newFixedThreadPool(20);
         for (int i = 0; i < 20; i++) {
             executorService.execute(() -> {
                 User user = userService.getUser(1L);
                 System.out.println(user);
             });
-        }
+        }*/
 
        /* RpcClient client = new NettyClient();
         RpcResp<?> rpcResp = client.sendReq(RpcReq.builder().interfaceName("请求数据").build());*/
+
+    }
+
+    public static void main(String[] args) {
+        UserService userService = ProxyUtils.getProxy(UserService.class);
+        Scanner scanner = new Scanner(System.in);
+        ExecutorService executorService = Executors.newFixedThreadPool(20);
+
+        while (true) {
+            System.out.println("请输入请求次数：");
+            int n = scanner.nextInt();
+            System.out.println("请输入id: ");
+            long id = scanner.nextLong();
+
+            for (int i = 0; i < n; i++) {
+                executorService.execute(() -> {
+                    try {
+                        User user = userService.getUser(id);
+                        System.out.println(user);
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                });
+            }
+        }
 
     }
 
