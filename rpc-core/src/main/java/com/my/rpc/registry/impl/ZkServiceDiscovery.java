@@ -41,7 +41,8 @@ public class ZkServiceDiscovery implements ServiceDiscovery {
 
         List<String> childrenNode = zkClient.getChildrenNode(path);
 
-        String ipAndPort = loadBalance.select(childrenNode);
+        // 127.0.0.1:8888
+        String ipAndPort = loadBalance.select(childrenNode, rpcReq);
 
         return IpUtils.toInetSocketAddress(ipAndPort);
 
