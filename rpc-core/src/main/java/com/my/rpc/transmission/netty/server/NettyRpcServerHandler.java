@@ -10,6 +10,7 @@ import com.my.rpc.enums.VersionType;
 import com.my.rpc.factory.SingletonFactory;
 import com.my.rpc.handler.RpcReqHandler;
 import com.my.rpc.provider.ServiceProvider;
+import com.my.rpc.util.ConfigUtils;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -42,13 +43,14 @@ public class NettyRpcServerHandler extends SimpleChannelInboundHandler<RpcMsg> {
             data = handlerRpcReq(rpcReq);
         }
 
+        String serializer = ConfigUtils.getRpcConfig().getSerializer();
 
         RpcMsg msg = RpcMsg.builder()
                 .id(rpcMsg.getId())
                 .version(VersionType.VERSION1)
                 .msgType(msgType)
                 .compressType(CompressType.GZIP)
-                .serializeType(SerializeType.KRYO)
+                .serializeType(SerializeType.from(serializer))
                 .data(data)
                 .build();
 

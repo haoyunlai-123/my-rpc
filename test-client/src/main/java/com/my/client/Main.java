@@ -65,7 +65,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        UserService userService = ProxyUtils.getProxy(UserService.class);
+        /*UserService userService = ProxyUtils.getProxy(UserService.class);
         Scanner scanner = new Scanner(System.in);
         ExecutorService executorService = Executors.newFixedThreadPool(20);
 
@@ -85,8 +85,11 @@ public class Main {
                     }
                 });
             }
-        }
+        }*/
 
+        UserService userService = ProxyUtils.getProxy(UserService.class);
+        User user = userService.getUser(10L);
+        System.out.println(user);
     }
 
     private static <T> T getProxy(Class<T> clazz) {

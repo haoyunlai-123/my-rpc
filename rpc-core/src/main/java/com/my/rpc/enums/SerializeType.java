@@ -5,12 +5,17 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 @Getter
 @ToString
 @AllArgsConstructor
 public enum SerializeType {
-    KRYO((byte) 1, "kryo");
+    CUSTOM((byte) 0, "custom"),
+    KRYO((byte) 1, "kryo"),
+    HESSIAN((byte) 2, "hessian"),
+    PROTOSTUFF((byte) 3, "protostuff"),
+    ;
 
     private final byte code;
     private final String desc;
@@ -19,6 +24,13 @@ public enum SerializeType {
         return Arrays.stream(values())
                 .filter(type -> type.getCode() == code)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("找不到对应的code" + code));
+                .orElse(CUSTOM);
+    }
+
+    public static SerializeType from(String desc) {
+        return Arrays.stream(values())
+                .filter(type -> Objects.equals(type.getDesc(), desc))
+                .findFirst()
+                .orElse(CUSTOM);
     }
 }

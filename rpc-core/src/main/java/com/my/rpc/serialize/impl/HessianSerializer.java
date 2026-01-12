@@ -19,6 +19,8 @@ public class HessianSerializer implements Serializer {
             HessianOutput output = new HessianOutput(oos);
             output.writeObject(obj);
 
+            log.info("===========使用hessian做序列化============");
+
             return oos.toByteArray();
 
         } catch (Exception e) {
@@ -33,6 +35,8 @@ public class HessianSerializer implements Serializer {
 
             HessianInput input = new HessianInput(ins);
             Object o = input.readObject();
+
+            log.info("===========使用hessian做反序列化============");
 
             return clazz.cast(o);
 

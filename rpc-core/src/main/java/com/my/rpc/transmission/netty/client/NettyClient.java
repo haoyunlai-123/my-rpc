@@ -14,6 +14,7 @@ import com.my.rpc.registry.impl.ZkServiceDiscovery;
 import com.my.rpc.transmission.RpcClient;
 import com.my.rpc.transmission.netty.codec.NettyRpcDecoder;
 import com.my.rpc.transmission.netty.codec.NettyRpcEncoder;
+import com.my.rpc.util.ConfigUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -90,9 +91,11 @@ public class NettyClient implements RpcClient {
         log.info("netty rpc client连接已建立, 连接到： {}", address);
 
 
+        String serializer = ConfigUtils.getRpcConfig().getSerializer();
+
         RpcMsg rpcMsg = RpcMsg.builder()
                 .version(VersionType.VERSION1)
-                .serializeType(SerializeType.KRYO)
+                .serializeType(SerializeType.from(serializer))
                 .compressType(CompressType.GZIP)
                 .msgType(MsgType.RPC_REQ)
                 .data(req)

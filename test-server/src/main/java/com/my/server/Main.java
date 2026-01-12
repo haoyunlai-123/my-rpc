@@ -28,14 +28,14 @@ public class Main {
 
 //        SocketRpcServer socketRpcServer = new SocketRpcServer(8888);
 
-        /*RpcServiceConfig config = new RpcServiceConfig(new UserServiceImpl());
+        RpcServiceConfig config = new RpcServiceConfig(new UserServiceImpl());
         // 服务方必须将实现类存至键值对中
         // 键值对中存的是： "UserService" : new UserServiceImpl()
         RpcServer server = new NettyRpcServer();
         server.publishService(config);
-        server.start();*/
+        server.start();
 
-        LoadBalance loadBalance = SingletonFactory.getInstance(ConsistentHashLoadBalance.class);
+        /*LoadBalance loadBalance = SingletonFactory.getInstance(ConsistentHashLoadBalance.class);
 
         List<String> list = Arrays.asList("ip1:port1", "ip2:port2", "ip3:port3");
 
@@ -48,7 +48,7 @@ public class Main {
         for (int i = 0; i < 10; i++) {
             String select = loadBalance.select(list, rpcReq);
             System.out.println(select);
-        }
+        }*/
     }
 
     public static void main1(String[] args) {

@@ -8,6 +8,7 @@ import com.my.rpc.enums.SerializeType;
 import com.my.rpc.factory.SingletonFactory;
 import com.my.rpc.serialize.Serializer;
 import com.my.rpc.serialize.impl.KryoSerializer;
+import com.my.rpc.spi.CustomLoader;
 import com.sun.deploy.xml.XMLAttributeBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -52,9 +53,11 @@ public class NettyRpcEncoder extends MessageToByteEncoder<RpcMsg> {
     }
 
     public byte[] data2Bytes(RpcMsg rpcMsg) {
-        // TODO 获取序列化和压缩类型
+        // 获取序列化和压缩类型
+        String serializeDesc = rpcMsg.getSerializeType().getDesc();
+        Serializer serializer = CustomLoader.getLoader(Serializer.class).get(serializeDesc);
 
-        Serializer serializer = SingletonFactory.getInstance(KryoSerializer.class);
+//        Serializer serializer = SingletonFactory.getInstance(KryoSerializer.class);
         Compress compress = SingletonFactory.getInstance(GzipCompress.class);
 
         byte[] data = serializer.serialize(rpcMsg.getData());
